@@ -77,83 +77,7 @@ k6 run --vus 20 --duration 1m script.js
 ## 📊 Generate HTML Report
 
 ### Step 1: Create Report Generator
-
-Save this as `generate-report.js`:
-
-```javascript
-const fs = require('fs');
-
-const filename = process.argv[2] || 'results.json';
-
-if (!fs.existsSync(filename)) {
-  console.error(`Error: File '${filename}' not found!`);
-  process.exit(1);
-}
-
-const data = fs.readFileSync(filename, 'utf8');
-const lines = data.trim().split('\n');
-
-const metrics = {};
-let totalRequests = 0;
-let failedRequests = 0;
-
-lines.forEach(line => {
-  try {
-    const json = JSON.parse(line);
-    
-    if (json.type === 'Point') {
-      if (json.metric === 'http_req_duration') {
-        totalRequests++;
-      }
-      if (json.metric === 'http_req_failed' && json.data.value === 1) {
-        failedRequests++;
-      }
-    }
-  } catch (e) {}
-});
-
-const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>K6 Test Report</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #667eea; padding: 20px; }
-    .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; }
-    .header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 40px; text-align: center; }
-    .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; padding: 40px; }
-    .card { background: #f8f9fa; padding: 25px; border-radius: 8px; }
-    .value { font-size: 2.5em; font-weight: bold; margin: 10px 0; }
-    .success { color: #48bb78; }
-    .error { color: #f56565; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>⚡ K6 Performance Test Report</h1>
-      <p>Generated: ${new Date().toLocaleString()}</p>
-    </div>
-    <div class="summary">
-      <div class="card">
-        <h3>Total Requests</h3>
-        <div class="value">${totalRequests}</div>
-      </div>
-      <div class="card">
-        <h3>Success Rate</h3>
-        <div class="value ${failedRequests === 0 ? 'success' : 'error'}">
-          ${totalRequests > 0 ? ((totalRequests - failedRequests) / totalRequests * 100).toFixed(1) : 0}%
-        </div>
-        <p>${totalRequests - failedRequests} succeeded, ${failedRequests} failed</p>
-      </div>
-    </div>
-  </div>
-</body>
-</html>`;
-
-fs.writeFileSync(filename.replace('.json', '.html'), html);
-console.log('✅ Report generated: ' + filename.replace('.json', '.html'));
-```
+Create `generate-report.js`, see the existing file as example.
 
 ### Step 2: Run Test and Generate Report
 
@@ -201,52 +125,6 @@ open -a "Google Chrome" results.html
 # Firefox
 open -a Firefox results.html
 ```
-
-## 📈 Common Test Patterns
-
-### Load Test (Gradual Ramp-Up)
-
-```javascript
-export const options = {
-  stages: [
-    { duration: '2m', target: 100 },   // Ramp up
-    { duration: '5m', target: 100 },   // Stay at peak
-    { duration: '2m', target: 0 },     // Ramp down
-  ],
-};
-```
-
-### Stress Test (Find Breaking Point)
-
-```javascript
-export const options = {
-  stages: [
-    { duration: '2m', target: 100 },
-    { duration: '5m', target: 200 },
-    { duration: '2m', target: 300 },
-    { duration: '5m', target: 300 },
-    { duration: '2m', target: 0 },
-  ],
-};
-```
-
-### Spike Test (Sudden Traffic Surge)
-
-```javascript
-export const options = {
-  stages: [
-    { duration: '10s', target: 100 },
-    { duration: '1m', target: 100 },
-    { duration: '10s', target: 1400 },  // Sudden spike
-    { duration: '3m', target: 1400 },
-    { duration: '10s', target: 100 },
-    { duration: '3m', target: 100 },
-    { duration: '10s', target: 0 },
-  ],
-};
-```
-
-## 💡 Pro Tips
 
 ### Local Execution with Cloud Visualization
 
@@ -304,29 +182,7 @@ k6 run --http-debug="full" script.js
 k6 run --out json=results.json --out csv=results.csv script.js
 ```
 
-### Run Specific Scenarios
-
-```javascript
-export const options = {
-  scenarios: {
-    smoke_test: {
-      executor: 'constant-vus',
-      vus: 1,
-      duration: '1m',
-    },
-    load_test: {
-      executor: 'ramping-vus',
-      startVUs: 0,
-      stages: [
-        { duration: '2m', target: 100 },
-        { duration: '5m', target: 100 },
-      ],
-    },
-  },
-};
-```
-
-### Quick Smoke Test
+### Quick Smoke Test by running 1 Virtual User for 30 sec
 
 ```bash
 # Test with minimal load
@@ -368,12 +224,13 @@ k6 run --out cloud script.js
 
 You'll see a URL in the output:
 ```
-output: cloud (https://app.k6.io/runs/123456)
+output: cloud (https://app.k6.io/runs/{currentRunId})
 ```
 
 **Open that URL to view results!**
 
 ### Step 3: Access Cloud Dashboard
+Go to https://eshayakhmedov.grafana.net/a/k6-app/projects to see results per project
 
 **Direct link:**
 ```bash
